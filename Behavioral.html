@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Specific Tests - L&T Edutech</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="js/excel-ui-handler.js" type="module"></script>
+    <script src="js/excel-processor.js" type="module"></script>
+    <script src="js/benchmark-processor.js" type="module"></script>
+    <script src="js/benchmark-ui-handler.js" type="module"></script>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo">L&T Edutech</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container split-screen">
+        <!-- Left Section -->
+        <div class="section">
+            <h2>Behavioral Tests (Without Bench Mark)</h2>
+            <div class="template-section">
+                <h3>Excel Template Format</h3>
+                <p>Your Excel file should follow this structure:</p>
+                <ul>
+                    <li>Email (Candidate email)</li>
+                    <li>TestDate (Date of the test)</li>
+                    <li>Question Columns (C1Q1, C2Q1, C3Q1, etc.)</li>
+                    <li>After each section add column header as "Separator".</li>
+                </ul>
+                <button class="template-btn" id="downloadTemplate">
+                    <i class="fas fa-download"></i> Download Template
+                </button>
+            </div>
+
+            <div class="upload-box">
+                <div class="upload-area" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & Drop your Excel file here or</p>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;">
+                    <button class="browse-btn">Browse Files</button>
+                    <p class="file-name" id="fileName"></p>
+                </div>
+
+                <!-- Calculate button -->
+                <button class="calculate-btn" id="calculateBtn" disabled>
+                    <i class="fas fa-calculator"></i> Calculate
+                </button>
+
+                <!-- Progress bar -->
+                <div id="progressBar" class="progress-bar-container" style="display: none;">
+                    <div class="progress-bar"></div>
+                    <p class="progress-text">Processing file...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section -->
+        <div class="section">
+            <h2>Behavioral Tests (With Bench Mark)</h2>
+              <!-- Section Controls -->
+        <div class="section-controls">
+            <button id="addSectionBtn" class="add-section-btn">
+                <i class="fas fa-plus"></i> Add Section
+            </button>
+        </div>
+
+        <!-- Dynamic Sections Container -->
+        <div id="sectionsContainer" class="sections-container">
+            <!-- Sections will be added here dynamically -->
+        </div>
+
+        <div class="upload-box">
+            <div class="upload-area" id="dropZoneRight">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag & Drop your Excel file here or</p>
+                <input type="file" id="fileInputRight" accept=".xlsx, .xls" style="display: none;">
+                <button class="browse-btn">Browse Files</button>
+                <p class="file-name" id="fileNameRight"></p>
+            </div>
+            <button class="calculate-btn" id="calculateBtnRight" disabled>
+                <i class="fas fa-calculator"></i> Calculate
+            </button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 L&T Edutech. All rights reserved.</p>
+    </footer>
+</body>
+</html>
