@@ -9,6 +9,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+
+    <header>
+        <nav class="navbar">
+            <!-- <div class="logo">L&T Edutech</div> -->
+            <a href="index.html">
+                <div class="logo">L&T Edutech</div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
     <div class="container">
         <div class="card">
             <h1>Excel Data Processor</h1>
@@ -29,15 +43,17 @@
 
         <div class="card">
             <h2>Filters</h2>
-            <div class="filter-buttons">
-                <button id="addValueFilterBtn" class="button primary">
-                    <i class="fas fa-filter"></i> Add Value Filter
-                </button>
-                <button id="addCutoffBtn" class="button primary">
-                    <i class="fas fa-plus"></i> Add Cutoff Filter
-                </button>
+            <div class="filters-section">
+                <div class="filter-buttons">
+                    <button id="addValueFilterBtn" class="button primary">
+                        <i class="fas fa-filter"></i> Add Value Filter
+                    </button>
+                    <button id="addCutoffBtn" class="button primary">
+                        <i class="fas fa-plus"></i> Add Cutoff Filter
+                    </button>
+                </div>
+                <div id="filtersContainer" class="filters-container"></div>
             </div>
-            <div id="filtersContainer" class="filters-container"></div>
             <button onclick="excelProcessor.applyFilters()" class="button primary">
                 Apply Filters
             </button>
@@ -51,11 +67,11 @@
             </div>
             <div class="buttons">
                 <button id="downloadSelected" class="button primary" disabled>
-                    <i class="fas fa-download"></i> Download Selected
+                    <i class="fas fa-download"></i> Download Selected Data
                 </button>
-                <button id="downloadRejected" class="button secondary" disabled>
+                <!-- <button id="downloadRejected" class="button secondary" disabled>
                     <i class="fas fa-download"></i> Download Rejected
-                </button>
+                </button> -->
             </div>
         </div>
     </div>

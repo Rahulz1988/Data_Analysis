@@ -681,6 +681,8 @@ label[for="specializationFilter"] {
     outline: none;
 }
 
+
+
 .button {
     background-color: #007BFF;
     color: white;
@@ -832,5 +834,61 @@ th {
 
 th:hover {
     background-color: #f5f5f5;
+}
+
+/* Add your existing styles here */
+
+/* Sticky Filter Buttons Styles */
+.filters-section {
+    position: relative;
+    padding-top: 20px; /* Reduced from 60px to 20px */
+}
+
+.filter-buttons {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    padding: 5px 0; /* Reduced from 10px to 5px */
+    z-index: 100;
+    border-bottom: 1px solid #eee;
+    /* Ensure buttons stay within their container */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.filters-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 0;
+    /* Add smooth scrolling */
+    scroll-behavior: smooth;
+}
+
+/* Optional: Add some spacing between filters */
+.filters-container > * {
+    margin-bottom: 10px;
+}
+
+/* Optional: Style scrollbar for better visibility */
+.filters-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.filters-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.filters-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.filters-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Add styles for the heading if needed */
+.card h2 {
+    margin-bottom: 10px; /* Reduces space below the heading */
 }
 
