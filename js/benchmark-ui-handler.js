@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('dropZoneRight');
     const fileName = document.getElementById('fileNameRight');
     const browseBtn = dropZone.querySelector('.browse-btn');
-    let sectionCount = 0;
 
     const showMessage = (message, type) => {
         const existingMessage = document.querySelector('.alert');
@@ -21,38 +20,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.body.insertBefore(messageDiv, document.body.firstChild);
 
-        setTimeout(() =>messageDiv.remove(), 3000);
+        setTimeout(() => messageDiv.remove(), 3000);
+    };
+
+    const updateSectionNumbers = () => {
+        const sections = sectionsContainer.querySelectorAll('.benchmark-section');
+        sections.forEach((section, index) => {
+            const sectionTitle = section.querySelector('h3');
+            sectionTitle.textContent = `Section ${index + 1}`;
+            
+            // Update input IDs to maintain consistency
+            const meanInput = section.querySelector('.mean-input');
+            const sdInput = section.querySelector('.sd-input');
+            meanInput.id = `mean-${index + 1}`;
+            sdInput.id = `sd-${index + 1}`;
+            
+            // Update remove button data attribute
+            const removeBtn = section.querySelector('.remove-section-btn');
+            removeBtn.dataset.section = index + 1;
+        });
     };
 
     const createSection = () => {
-        sectionCount++;
+        const currentSections = sectionsContainer.querySelectorAll('.benchmark-section');
+        const newSectionNumber = currentSections.length + 1;
+
         const sectionDiv = document.createElement('div');
         sectionDiv.className = 'benchmark-section';
         sectionDiv.innerHTML = `
-            <h3>Section ${sectionCount}</h3>
+            <h3>Section ${newSectionNumber}</h3>
             <div class="input-group">
                 <div class="input-field">
-                    <label for="mean-${sectionCount}">Mean:</label>
-                    <input type="number" id="mean-${sectionCount}" class="mean-input" placeholder="Enter Mean">
+                    <label for="mean-${newSectionNumber}">Mean:</label>
+                    <input type="number" id="mean-${newSectionNumber}" class="mean-input" placeholder="Enter Mean">
                 </div>
                 <div class="input-field">
-                    <label for="sd-${sectionCount}">Standard Deviation:</label>
-                    <input type="number" id="sd-${sectionCount}" class="sd-input" placeholder="Enter SD">
+                    <label for="sd-${newSectionNumber}">Standard Deviation:</label>
+                    <input type="number" id="sd-${newSectionNumber}" class="sd-input" placeholder="Enter SD">
                 </div>
-                <button class="remove-section-btn" data-section="${sectionCount}">
+                <button class="remove-section-btn" data-section="${newSectionNumber}">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         `;
         sectionsContainer.appendChild(sectionDiv);
 
-        sectionDiv.querySelector('.remove-section-btn').addEventListener('click', () => {
+        sectionDiv.querySelector('.remove-section-btn').addEventListener('click', (e) => {
             sectionDiv.remove();
+            updateSectionNumbers();
             validateInputs();
         });
 
         const inputs = sectionDiv.querySelectorAll('input');
-        inputs.forEach(input =>input.addEventListener('input', validateInputs));
+        inputs.forEach(input => input.addEventListener('input', validateInputs));
     };
 
     const validateInputs = () => {
@@ -68,11 +88,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        calculateBtn.disabled= !isValid || sections.length === 0 || !dropZone.fileObject;
+        calculateBtn.disabled = !isValid || sections.length === 0 || !dropZone.fileObject;
     };
 
     const handleFileSelection = (files) => {
-        if (files &&files.length> 0) {
+        if (files && files.length > 0) {
             const file = files[0];
             const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 
@@ -96,8 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', (e) =>handleFileSelection(e.target.files));
-    dropZone.addEventListener('dragover', (e) =>e.preventDefault());
+    fileInput.addEventListener('change', (e) => handleFileSelection(e.target.files));
+    dropZone.addEventListener('dragover', (e) => e.preventDefault());
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         handleFileSelection(e.dataTransfer.files);
@@ -124,4 +144,3 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
