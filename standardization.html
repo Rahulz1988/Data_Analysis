@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Data Processor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="js/excel-standardize.js" defer></script> <!-- External script -->
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="nav-logo">
+                <div class="logo">Standrdization</div>
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- File Upload Section -->
+        <div class="card">
+            <h2>Upload Excel File</h2>
+            <input type="file" id="fileInput" accept=".xlsx, .xls" style="display:none;" />
+            <button id="uploadBtn" class="button primary">Upload Excel File</button>
+            <p id="fileName">No file selected</p>
+        </div>
+
+        <!-- Header Selection Section -->
+        <div class="card">
+            <h2>Calculate Standard Deviation</h2>
+            <label for="headerSelector">Select columns for SD calculation:</label>
+            <select id="headerSelector" multiple class="header-selector">
+                <!-- Headers will be populated dynamically -->
+            </select>
+            <button id="calculateBtn" class="button primary">Calculate</button>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card">
+            <h2>Results</h2>
+            <div id="resultsBox" class="results-box">
+                <!-- Standard deviation results will appear here -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>

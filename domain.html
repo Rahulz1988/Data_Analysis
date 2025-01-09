@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excel Data Processor</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-
     <header>
         <nav class="navbar">
-            <!-- <div class="logo">L&T Edutech</div> -->
-            <a href="index.html">
-                <div class="logo">L&T Edutech</div>
+            <a href="index.html" class="nav-logo">
+                <div class="logo">Domain Specific Processing</div>
             </a>
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
@@ -23,12 +21,13 @@
             </ul>
         </nav>
     </header>
+
     <div class="container">
+        <!-- File Upload Section -->
         <div class="card">
-            <h1>Excel Data Processor</h1>
-            
+            <h2>Upload Excel File</h2>
             <div class="upload-area" id="dropZone">
-                <i class="fas fa-cloud-upload-alt"></i>
+                <i class="fas fa-cloud-upload-alt fa-3x"></i>
                 <p>Drag & Drop Excel file here or</p>
                 <input type="file" id="fileInput" accept=".xlsx, .xls" style="display: none;">
                 <button class="button primary" onclick="document.getElementById('fileInput').click()">
@@ -41,8 +40,9 @@
             </div>
         </div>
 
+        <!-- Filters Section -->
         <div class="card">
-            <h2>Filters</h2>
+            <h2>Data Filters</h2>
             <div class="filters-section">
                 <div class="filter-buttons">
                     <button id="addValueFilterBtn" class="button primary">
@@ -53,25 +53,45 @@
                     </button>
                 </div>
                 <div id="filtersContainer" class="filters-container"></div>
+                <button id="applyFiltersBtn" class="button primary" onclick="excelProcessor.applyFilters()">
+                    Apply Filters
+                </button>
             </div>
-            <button onclick="excelProcessor.applyFilters()" class="button primary">
-                Apply Filters
-            </button>
         </div>
 
+        <!-- Download Options Section -->
+        <div class="card">
+            <h2>Download Options</h2>
+            <div class="header-selection">
+                <label for="headerSelector">Select columns to include in download:</label>
+                <select id="headerSelector" multiple class="header-selector">
+                    <!-- Headers will be populated dynamically -->
+                </select>
+                <div id="selectedHeadersBox" class="selected-headers-box">
+                    <!-- Selected headers will be displayed here -->
+                </div>
+            </div>
+            <div id="statsContainer" class="stats-container">
+                <!-- Statistics will be displayed here -->
+            </div>
+            <div class="filter-buttons">
+                <button id="downloadSelected" class="button primary" disabled>
+                    <i class="fas fa-download"></i> Download Selected Columns
+                </button>
+                <button id="downloadAllFilteredData" class="button primary" disabled>
+                    <i class="fas fa-download"></i> Download All Filtered Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Table Section -->
         <div class="card">
             <h2>Data Preview</h2>
             <div id="tableNav" class="table-nav"></div>
             <div class="table-container">
-                <table id="dataTable"></table>
-            </div>
-            <div class="buttons">
-                <button id="downloadSelected" class="button primary" disabled>
-                    <i class="fas fa-download"></i> Download Selected Data
-                </button>
-                <!-- <button id="downloadRejected" class="button secondary" disabled>
-                    <i class="fas fa-download"></i> Download Rejected
-                </button> -->
+                <table id="dataTable">
+                    <!-- Table content will be populated dynamically -->
+                </table>
             </div>
         </div>
     </div>

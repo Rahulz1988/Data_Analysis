@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload & Process</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <header class="navbar">
+        <a href="index.html" class="nav-logo">
+        <div class="logo">File Processing</div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <h2>Upload Your File</h2>
+            <div class="upload-box" id="upload-box">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag and Drop a ZIP file or click to select</p>
+                <input type="file" id="file-input" accept=".zip">
+            </div>
+            <button class="browse-btn" id="browse-btn">Browse Files</button>
+            <div class="file-name" id="file-name"></div>
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+        </section>
+
+        <!-- Filename Search Section -->
+        <section class="search-section">
+            <h2>Enter Filename or Substring</h2>
+            <input type="text" id="file-search" placeholder="Enter filename or substring to search" />
+        </section>
+
+        <!-- Process Section -->
+        <section class="processing-options">
+            <div class="checkbox-container">
+                <input type="checkbox" id="process-options">
+                <label for="process-options">Process Files</label>
+            </div>
+            <button class="calculate-btn" id="process-btn" disabled>Process Files</button>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 File Processing App. All Rights Reserved.</p>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

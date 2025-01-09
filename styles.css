@@ -892,3 +892,72 @@ th:hover {
     margin-bottom: 10px; /* Reduces space below the heading */
 }
 
+.header-selection {
+    margin: 15px 0;
+}
+
+.header-selector {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.selected-headers-box {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+    min-height: 50px;
+}
+
+.selected-header-tag {
+    background: #e0e0e0;
+    padding: 2px 8px;
+    margin: 2px;
+    border-radius: 3px;
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.selected-header-tag:hover {
+    background: #d0d0d0;
+}
+
+/* Add these styles to your existing CSS */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.stat-box {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    color: #212529;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.status-select {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-reject {
+    background-color: #f8d7da;
+    color: #721c24;
+}
