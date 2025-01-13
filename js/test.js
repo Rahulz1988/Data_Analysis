@@ -1,12 +1,14 @@
 /* Global variables and constants */
 let jsonData = null;
+let originalJsonData = null;  // Store original data
 let excelHeaders = [];  // Store Excel headers
 
 // Constants for headers
-const FIXED_HEADERS = ['SN', 'Email ID', 'Full Name', 'Specialization'];
+const FIXED_HEADERS = ['SN', 'Email ID', 'Full Name', 'Specialization', 'Credibility Score'];
 const SECTION_HEADERS = ['MaxScore', 'Score', 'Percentage'];
 const SEPARATOR = 'Separator';
 const ASSESSMENT_STATUS = 'Assessment Status';
+const CREDIBILITY_SCORE = 'Credibility Score';
 
 // Constants for normalization
 const TARGET_MIN = 28; // Minimum target percentage
@@ -70,6 +72,7 @@ function downloadTemplate() {
             headers.push(...createSectionHeaders(i));
             headers.push(SEPARATOR);
         }
+        headers.push(CREDIBILITY_SCORE);
         headers.push(ASSESSMENT_STATUS);
 
         const ws = XLSX.utils.aoa_to_sheet([headers]);
@@ -95,7 +98,8 @@ async function handleFileUpload(e) {
             const data = new Uint8Array(event.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            jsonData = XLSX.utils.sheet_to_json(worksheet);
+            originalJsonData = XLSX.utils.sheet_to_json(worksheet);
+            jsonData = JSON.parse(JSON.stringify(originalJsonData)); // Deep copy
 
             if (jsonData.length === 0) {
                 throw new Error('Empty file');
@@ -138,92 +142,263 @@ function addCutoffFilter() {
 }
 
 // Main Processing Function
+// function processData() {
+//     if (!originalJsonData) {
+//         alert('Please upload data first.');
+//         return;
+//     }
+
+//     // Reset to original data before each normalization
+//     jsonData = JSON.parse(JSON.stringify(originalJsonData));
+
+//     // Clear any previous change markers
+//     jsonData.forEach(row => {
+//         Object.keys(row).forEach(key => {
+//             if (key.endsWith('_changed')) {
+//                 delete row[key];
+//             }
+//         });
+//     });
+
+//     applyCutoffFilters();
+//     const initialPercentage = calculateTestSelectPercentage();
+//     console.log('Initial percentage:', initialPercentage);
+
+//     // Define target percentage within range
+//     let targetPercentage;
+//     if (initialPercentage < TARGET_MIN) {
+//         targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
+//         adjustScoresWithSD('up', targetPercentage);
+//     } else if (initialPercentage > TARGET_MAX) {
+//         targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
+//         adjustScoresWithSD('down', targetPercentage);
+//     } else {
+//         // If already in range, make small random adjustments
+//         targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
+//         const direction = Math.random() < 0.5 ? 'up' : 'down';
+//         adjustScoresWithSD(direction, targetPercentage);
+//     }
+
+//     const finalPercentage = calculateTestSelectPercentage();
+//     console.log('Final percentage:', finalPercentage);
+
+//     downloadResultBtn.style.display = 'block';
+//     displayResults();
+// }
+
 function processData() {
-    if (!jsonData) {
+    if (!originalJsonData) {
         alert('Please upload data first.');
         return;
     }
 
+    // Reset to original data before each normalization
+    jsonData = JSON.parse(JSON.stringify(originalJsonData));
+
+    // Clear any previous change markers
+    jsonData.forEach(row => {
+        Object.keys(row).forEach(key => {
+            if (key.endsWith('_changed')) {
+                delete row[key];
+            }
+        });
+    });
+
     applyCutoffFilters();
     const initialPercentage = calculateTestSelectPercentage();
+    console.log('Initial percentage:', initialPercentage);
 
-    // Determine the action based on the initial test select percentage
-    if (initialPercentage > UPPER_THRESHOLD) {
-        adjustScoresWithSD('down');
-    } else if (initialPercentage < LOWER_THRESHOLD) {
-        adjustScoresWithSD('up');
+    // Define target percentage within range
+    let targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
+    console.log('Target percentage:', targetPercentage);
+
+    if (initialPercentage < targetPercentage) {
+        adjustScoresWithSD('up', targetPercentage);
+    } else {
+        adjustScoresWithSD('down', targetPercentage);
     }
+
+    const finalPercentage = calculateTestSelectPercentage();
+    console.log('Final percentage:', finalPercentage);
+
+    // Verify that jsonData has been modified
+    console.log('Data has been normalized:', 
+        jsonData.some(row => Object.keys(row).some(key => key.endsWith('_changed')))
+    );
 
     downloadResultBtn.style.display = 'block';
     displayResults();
 }
 
-// Adjust Scores Based on Standard Deviation
-function adjustScoresWithSD(direction) {
-    // Use a regular expression to match score headers starting with 'S' followed by any number
+// // Score Adjustment Function
+// function adjustScoresWithSD(direction, targetPercentage) {
+//     const scoreHeaders = excelHeaders.filter(header => header.match(/^S\d+Score$/));
+    
+//     if (!scoreHeaders.includes('S3Score')) scoreHeaders.push('S3Score');
+//     if (!scoreHeaders.includes('S4Score')) scoreHeaders.push('S4Score');
+    
+//     const maxScoreHeaders = scoreHeaders.map(scoreHeader => 
+//         scoreHeader.replace('Score', 'MaxScore')
+//     );
+    
+//     const standardDeviations = {};
+    
+//     scoreHeaders.forEach(header => {
+//         const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
+//         standardDeviations[header] = calculateStandardDeviation(values);
+//     });
+    
+//     let currentPercentage = calculateTestSelectPercentage();
+//     let iterationCount = 0;
+//     const maxIterations = 1000; // Prevent infinite loops
+    
+//     while (iterationCount < maxIterations) {
+//         currentPercentage = calculateTestSelectPercentage();
+//         console.log('Current percentage:', currentPercentage);
+        
+//         // Break if we're close enough to target
+//         if (Math.abs(currentPercentage - targetPercentage) < 0.5) {
+//             break;
+//         }
+
+//         // Determine if we need to go up or down based on current vs target
+//         const effectiveDirection = currentPercentage < targetPercentage ? 'up' : 'down';
+        
+//         const candidatesToModify = 
+//             effectiveDirection === 'down' ? 
+//                 jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Select') :
+//                 jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Reject');
+        
+//         if (candidatesToModify.length === 0) break;
+        
+//         // Adjust the number of candidates to modify based on how far we are from target
+//         const percentageDiff = Math.abs(currentPercentage - targetPercentage);
+//         const numCandidatesToModify = Math.max(1, Math.min(
+//             Math.ceil(candidatesToModify.length * (percentageDiff / 100)),
+//             Math.ceil(candidatesToModify.length * 0.1) // Max 10% at once
+//         ));
+        
+//         for (let i = 0; i < numCandidatesToModify; i++) {
+//             const randomCandidateIndex = Math.floor(Math.random() * candidatesToModify.length);
+//             const randomCandidate = candidatesToModify[randomCandidateIndex];
+            
+//             scoreHeaders.forEach((header, index) => {
+//                 const currentValue = parseFloat(randomCandidate[header]);
+//                 const maxScoreHeader = maxScoreHeaders[index];
+//                 const maxScoreValue = parseFloat(randomCandidate[maxScoreHeader]);
+                
+//                 if (!isNaN(currentValue) && !isNaN(maxScoreValue)) {
+//                     // Adjust the random factor based on how far we are from target
+//                     const randomFactor = 0.5 + (Math.random() * (percentageDiff / 50));
+//                     const adjustmentValue = standardDeviations[header] * randomFactor;
+                    
+//                     if (effectiveDirection === 'down') {
+//                         randomCandidate[header] = Math.max(0, (currentValue - adjustmentValue)).toFixed(2);
+//                     } else {
+//                         randomCandidate[header] = Math.min(maxScoreValue, (currentValue + adjustmentValue)).toFixed(2);
+//                     }
+                    
+//                     randomCandidate[header.replace('Score', 'Percentage')] = 
+//                         ((parseFloat(randomCandidate[header]) / maxScoreValue) * 100).toFixed(2);
+                    
+//                     randomCandidate[header + '_changed'] = true;
+//                 }
+//             });
+            
+//             randomCandidate[ASSESSMENT_STATUS] = 
+//                 effectiveDirection === 'down' ? 'Test Reject' : 'Test Select';
+//         }
+        
+//         iterationCount++;
+//     }
+// }
+
+
+function adjustScoresWithSD(direction, targetPercentage) {
     const scoreHeaders = excelHeaders.filter(header => header.match(/^S\d+Score$/));
-  
-    // Ensure all sections are included
+    
     if (!scoreHeaders.includes('S3Score')) scoreHeaders.push('S3Score');
     if (!scoreHeaders.includes('S4Score')) scoreHeaders.push('S4Score');
-  
+    
     const maxScoreHeaders = scoreHeaders.map(scoreHeader => 
-      scoreHeader.replace('Score', 'MaxScore')
+        scoreHeader.replace('Score', 'MaxScore')
     );
-  
+    
     const standardDeviations = {};
-  
-    // Calculate SD for each score column
+    
     scoreHeaders.forEach(header => {
-      const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
-      standardDeviations[header] = calculateStandardDeviation(values);
+        const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
+        standardDeviations[header] = calculateStandardDeviation(values);
     });
-  
-    let currentPercentage;
-  
-    do {
-      currentPercentage = calculateTestSelectPercentage();
-  
-      // Randomly select candidates based on direction
-      const candidatesToModify = 
-        direction === 'down' ? jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Select') :
-                             jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Reject');
-  
-      if (candidatesToModify.length === 0) break;
-  
-      const randomCandidateIndex = Math.floor(Math.random() * candidatesToModify.length);
-      const randomCandidate = candidatesToModify[randomCandidateIndex];
-  
-      scoreHeaders.forEach((header, index) => {
-        const currentValue = parseFloat(randomCandidate[header]);
-        const maxScoreHeader = maxScoreHeaders[index];
-        const maxScoreValue = parseFloat(randomCandidate[maxScoreHeader]);
-  
-        if (!isNaN(currentValue) && !isNaN(maxScoreValue)) {
-          const adjustmentValue = standardDeviations[header];
-          if (direction === 'down') {
-            randomCandidate[header] = Math.max(0, (currentValue - adjustmentValue)).toFixed(2);
-          } else { // direction === 'up'
-            randomCandidate[header] = Math.min(maxScoreValue, (currentValue + adjustmentValue)).toFixed(2);
-          }
-  
-          // Update the corresponding percentage
-          randomCandidate[header.replace('Score', 'Percentage')] = 
-            ((parseFloat(randomCandidate[header]) / maxScoreValue) * 100).toFixed(2);
-  
-          // Mark the cell as changed for highlighting
-          randomCandidate[header + '_changed'] = true;
+    
+    let currentPercentage = calculateTestSelectPercentage();
+    let iterationCount = 0;
+    const maxIterations = 1000; // Prevent infinite loops
+    
+    while (iterationCount < maxIterations) {
+        currentPercentage = calculateTestSelectPercentage();
+        console.log('Current percentage:', currentPercentage);
+        
+        // Break if we're close enough to target
+        if (Math.abs(currentPercentage - targetPercentage) < 0.5) {
+            break;
         }
-      });
-  
-      randomCandidate[ASSESSMENT_STATUS] = 
-        direction === 'down' ? 'Test Reject' : 'Test Select';
-  
-    } while ((direction === 'down' && currentPercentage > TARGET_MIN) || 
-             (direction === 'up' && currentPercentage < TARGET_MAX));
-  }
-  
- 
+
+        // Determine if we need to go up or down based on current vs target
+        const effectiveDirection = currentPercentage < targetPercentage ? 'up' : 'down';
+        
+        const candidatesToModify = 
+            effectiveDirection === 'down' ? 
+                jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Select') :
+                jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Reject');
+        
+        if (candidatesToModify.length === 0) break;
+        
+        // Adjust the number of candidates to modify based on how far we are from target
+        const percentageDiff = Math.abs(currentPercentage - targetPercentage);
+        const numCandidatesToModify = Math.max(1, Math.min(
+            Math.ceil(candidatesToModify.length * (percentageDiff / 100)),
+            Math.ceil(candidatesToModify.length * 0.1) // Max 10% at once
+        ));
+        
+        for (let i = 0; i < numCandidatesToModify; i++) {
+            const randomCandidateIndex = Math.floor(Math.random() * candidatesToModify.length);
+            const randomCandidate = candidatesToModify[randomCandidateIndex];
+            
+            scoreHeaders.forEach((header, index) => {
+                const currentValue = parseFloat(randomCandidate[header]);
+                const maxScoreHeader = maxScoreHeaders[index];
+                const maxScoreValue = parseFloat(randomCandidate[maxScoreHeader]);
+                
+                if (!isNaN(currentValue) && !isNaN(maxScoreValue)) {
+                    // Adjust the random factor based on how far we are from target
+                    const randomFactor = 0.5 + (Math.random() * (percentageDiff / 50));
+                    const adjustmentValue = standardDeviations[header] * randomFactor;
+                    
+                    let newValue;
+                    if (effectiveDirection === 'down') {
+                        newValue = Math.max(0, (currentValue - adjustmentValue));
+                    } else {
+                        newValue = Math.min(maxScoreValue, (currentValue + adjustmentValue));
+                    }
+                    
+                    // Round the value to the nearest integer
+                    randomCandidate[header] = Math.round(newValue);
+                    
+                    randomCandidate[header.replace('Score', 'Percentage')] = 
+                        Math.round((parseFloat(randomCandidate[header]) / maxScoreValue) * 100);
+                    
+                    randomCandidate[header + '_changed'] = true;
+                }
+            });
+            
+            randomCandidate[ASSESSMENT_STATUS] = 
+                effectiveDirection === 'down' ? 'Test Reject' : 'Test Select';
+        }
+        
+        iterationCount++;
+    }
+}
 
 // Apply Cutoff Filters
 function applyCutoffFilters() {
@@ -254,57 +429,190 @@ function applyCutoffFilters() {
                 }
             });
 
-        row[ASSESSMENT_STATUS] =
-            passesAllFilters ? 'Test Select' : 'Test Reject';
+        row[ASSESSMENT_STATUS] = passesAllFilters ? 'Test Select' : 'Test Reject';
     });
 }
 
 // Results Display
 function displayResults() {
-   const totalCandidates= jsonData.length;
-   const selected= jsonData.filter(row=> row[ASSESSMENT_STATUS]==='Test Select').length;
-   const rejected= totalCandidates - selected;
-   const selectionPercentage= ((selected / totalCandidates)*100).toFixed(2);
+    const totalCandidates = jsonData.length;
+    const selected = jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Select').length;
+    const rejected = totalCandidates - selected;
+    const selectionPercentage = ((selected / totalCandidates) * 100).toFixed(2);
 
-   resultsBox.innerHTML= `
-       <p><strong>Total Candidates:</strong> ${totalCandidates}</p>
-       <p><strong>Selected:</strong> ${selected} (${selectionPercentage}%)</p>
-       <p><strong>Rejected:</strong> ${rejected}</p>
-   `;
+    resultsBox.innerHTML = `
+        <p><strong>Total Candidates:</strong> ${totalCandidates}</p>
+        <p><strong>Selected:</strong> ${selected} (${selectionPercentage}%)</p>
+        <p><strong>Rejected:</strong> ${rejected}</p>
+    `;
 }
 
 // Download Results
+// function downloadResult() {
+//     try {
+//         const ws = XLSX.utils.json_to_sheet(jsonData);
+
+//         // Highlight changed cells
+//         jsonData.forEach((row, rowIndex) => {
+//             Object.keys(row).forEach(header => {
+//                 if (header.endsWith('_changed') && row[header]) {
+//                     const cellAddress = XLSX.utils.encode_cell({
+//                         r: rowIndex + 1,
+//                         c: excelHeaders.indexOf(header.replace('_changed', ''))
+//                     });
+//                     if (ws[cellAddress]) {
+//                         ws[cellAddress].s = { fill: { fgColor: { rgb: "FFFF00" } } };
+//                     }
+//                 }
+//             });
+//         });
+
+//         const wb = XLSX.utils.book_new();
+//         XLSX.utils.book_append_sheet(wb, ws, 'Results');
+//         XLSX.writeFile(wb, `normalized_results_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`);
+//     } catch (error) {
+//         console.error('Download error:', error);
+//         alert('Error downloading results. Please try again.');
+//     }
+// }
+
+// Download Results
+// function downloadResult() {
+//     try {
+//         // Create a deep copy of jsonData without the _changed flags
+//         const downloadData = jsonData.map(row => {
+//             const cleanRow = {};
+//             Object.keys(row).forEach(key => {
+//                 // Skip the _changed marker properties
+//                 if (!key.endsWith('_changed')) {
+//                     cleanRow[key] = row[key];
+//                 }
+//             });
+//             return cleanRow;
+//         });
+
+//         // Create worksheet from the normalized data
+//         const ws = XLSX.utils.json_to_sheet(downloadData);
+
+//         // Add cell styling for changed values
+//         downloadData.forEach((row, rowIndex) => {
+//             Object.keys(row).forEach(key => {
+//                 // Check if this cell was changed (by looking at the _changed flag in original jsonData)
+//                 if (jsonData[rowIndex][key + '_changed']) {
+//                     const cellAddress = XLSX.utils.encode_cell({
+//                         r: rowIndex + 1, // Add 1 to account for header row
+//                         c: Object.keys(downloadData[0]).indexOf(key)
+//                     });
+                    
+//                     if (!ws[cellAddress]) {
+//                         ws[cellAddress] = { v: row[key] };
+//                     }
+                    
+//                     // Set yellow background for changed cells
+//                     ws[cellAddress].s = {
+//                         fill: {
+//                             patternType: 'solid',
+//                             fgColor: { rgb: "FFFF00" }
+//                         }
+//                     };
+//                 }
+//             });
+//         });
+
+//         // Set column widths
+//         const maxWidth = 15;
+//         const colWidths = {};
+//         Object.keys(downloadData[0]).forEach(key => {
+//             colWidths[key] = Math.min(maxWidth, key.length + 2);
+//         });
+//         ws['!cols'] = Object.values(colWidths).map(width => ({ width }));
+
+//         // Create workbook and append worksheet
+//         const wb = XLSX.utils.book_new();
+//         XLSX.utils.book_append_sheet(wb, ws, 'Normalized Results');
+
+//         // Generate filename with timestamp
+//         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+//         const filename = `normalized_results_${timestamp}.xlsx`;
+
+//         // Write file
+//         XLSX.writeFile(wb, filename);
+
+//         console.log('Download completed successfully');
+//     } catch (error) {
+//         console.error('Download error:', error);
+//         alert('Error downloading results. Please try again.');
+//     }
+// }
+
 function downloadResult() {
     try {
-      // Ensure only normalized data is included in the download
-      const normalizedData = jsonData.map(row => {
-        // Keep Assessment Status
-        return row;
-      });
-  
-      // Create worksheet from normalized data
-      const ws = XLSX.utils.json_to_sheet(normalizedData);
-  
-      // Highlight changed cells
-      normalizedData.forEach((row, rowIndex) => {
-        Object.keys(row).forEach(header => {
-          if (header.endsWith('_changed') && row[header]) {
-            const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: excelHeaders.indexOf(header.replace('_changed', '')) });
-            if (ws[cellAddress]) {
-              ws[cellAddress].s = { fill: { fgColor: { rgb: "FFFF00" } } }; // Yellow color for changed cells
-            }
-          }
+        // Create enhanced data with change tracking columns
+        const downloadData = jsonData.map(row => {
+            const enhancedRow = {};
+            
+            // First add all original columns
+            Object.keys(row).forEach(key => {
+                if (!key.endsWith('_changed')) {
+                    enhancedRow[key] = row[key];
+                }
+            });
+            
+            // Add change tracking columns for score and percentage fields
+            Object.keys(row).forEach(key => {
+                if (key.endsWith('_changed') && row[key] === true) {
+                    // Get the original column name without '_changed'
+                    const originalKey = key.replace('_changed', '');
+                    // Create a new column indicating the change
+                    enhancedRow[`${originalKey}_IsChanged`] = 'Yes';
+                }
+            });
+            
+            return enhancedRow;
         });
-      });
-  
-      // Create and save workbook
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Results');
-      XLSX.writeFile(wb, `normalized_results_${new Date().toISOString().replace(/[:.]/g,'-')}.xlsx`);
+
+        // // Add 'No' for unchanged values
+        // const allColumns = new Set();
+        // downloadData.forEach(row => {
+        //     Object.keys(row).forEach(key => allColumns.add(key));
+        // });
+        
+        // downloadData.forEach(row => {
+        //     allColumns.forEach(col => {
+        //         if (col.endsWith('_IsChanged') && !row[col]) {
+        //             row[col] = 'No';
+        //         }
+        //     });
+        // });
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(downloadData);
+
+        // Set column widths for better readability
+        const maxWidth = 15;
+        ws['!cols'] = Object.keys(downloadData[0]).map(key => ({
+            width: Math.min(maxWidth, key.length + 2)
+        }));
+
+        // Create workbook and append worksheet
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Normalized Results');
+
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `normalized_results_${timestamp}.xlsx`;
+
+        // Write file
+        const wopts = {
+            bookSST: false,
+            bookType: 'xlsx',
+            compression: true
+        };
+
+        XLSX.writeFile(wb, filename, wopts);
+        console.log('Download completed with change tracking columns');
     } catch (error) {
-      console.error('Download error:', error);
-      alert('Error downloading results. Please try again.');
+        console.error('Download error:', error);
+        alert('Error downloading results. Please try again.');
     }
-  }
-
-
+}

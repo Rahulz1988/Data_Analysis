@@ -26,6 +26,10 @@ const resultsBox = document.getElementById('resultsBox');
 const addCutoffBtn = document.getElementById('addCutoffBtn');
 const cutoffInputs = document.getElementById('cutoffInputs');
 
+// DOM Elements for statistics
+const statsBox = document.getElementById('statsBox');
+const downloadStatsBtn = document.getElementById('downloadStatsBtn');
+
 // Event Listeners
 uploadBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', handleFileUpload);
@@ -37,13 +41,19 @@ downloadResultBtn.addEventListener('click', () => {
     }
 });
 addCutoffBtn.addEventListener('click', addCutoffFilter);
+downloadStatsBtn.addEventListener('click', downloadStatistics);
+
+// Custom rounding function
+function customRound(value) {
+    return value < 0 ? Math.ceil(value) : Math.floor(value + 0.5);
+}
 
 // Helper Functions
 function calculateStandardDeviation(values) {
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const squareDiffs = values.map(value => Math.pow(value - mean, 2));
     const avgSquareDiff = squareDiffs.reduce((sum, val) => sum + val, 0) / values.length;
-    return Math.round(Math.sqrt(avgSquareDiff) * 100) / 100;
+    return customRound(Math.sqrt(avgSquareDiff)); // Use custom rounding here
 }
 
 function validateNormalization() {
@@ -109,12 +119,68 @@ async function handleFileUpload(e) {
             processBtn.disabled = false;
             addCutoffBtn.disabled = false;
             cutoffInputs.innerHTML = '';
+
+            // Calculate and display statistics
+            displayStatistics();
+
         } catch (error) {
             console.error('File processing error:', error);
             alert('Error processing file. Please ensure it\'s a valid Excel file.');
         }
     };
     reader.readAsArrayBuffer(file);
+}
+
+// Function to display statistics
+function displayStatistics() {
+    const scoreHeaders = excelHeaders.filter(header => header.match(/^S\d+Score$/));
+    let statsHtml = '<table><tr><th>Score</th><th>Max</th><th>Min</th><th>Mean</th><th>Standard Deviation</th></tr>';
+
+    scoreHeaders.forEach(header => {
+        const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
+        if (values.length > 0) {
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const sd = calculateStandardDeviation(values);
+
+            statsHtml += `<tr>
+                <td>${header}</td>
+                <td>${max}</td>
+                <td>${min}</td>
+                <td>${customRound(mean)}</td>
+                <td>${sd}</td>
+            </tr>`;
+        }
+    });
+    statsHtml += '</table>';
+    
+    statsBox.innerHTML = statsHtml;
+    statsBox.style.display = 'block';
+    downloadStatsBtn.style.display = 'block';
+}
+
+// Download Statistics
+function downloadStatistics() {
+    const statsHeaders = ['Score', 'Max', 'Min', 'Mean', 'Standard Deviation'];
+    const statsData = [];
+
+    const scoreHeaders = excelHeaders.filter(header => header.match(/^S\d+Score$/));
+    scoreHeaders.forEach(header => {
+        const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
+        if (values.length > 0) {
+            const max = Math.max(...values);
+            const min = Math.min(...values);
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const sd = calculateStandardDeviation(values);
+            statsData.push([header, max, min, customRound(mean), sd]);
+        }
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([statsHeaders, ...statsData]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Statistics');
+    XLSX.writeFile(wb, `statistics_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`);
 }
 
 // Cutoff Filter UI
@@ -142,50 +208,6 @@ function addCutoffFilter() {
 }
 
 // Main Processing Function
-// function processData() {
-//     if (!originalJsonData) {
-//         alert('Please upload data first.');
-//         return;
-//     }
-
-//     // Reset to original data before each normalization
-//     jsonData = JSON.parse(JSON.stringify(originalJsonData));
-
-//     // Clear any previous change markers
-//     jsonData.forEach(row => {
-//         Object.keys(row).forEach(key => {
-//             if (key.endsWith('_changed')) {
-//                 delete row[key];
-//             }
-//         });
-//     });
-
-//     applyCutoffFilters();
-//     const initialPercentage = calculateTestSelectPercentage();
-//     console.log('Initial percentage:', initialPercentage);
-
-//     // Define target percentage within range
-//     let targetPercentage;
-//     if (initialPercentage < TARGET_MIN) {
-//         targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
-//         adjustScoresWithSD('up', targetPercentage);
-//     } else if (initialPercentage > TARGET_MAX) {
-//         targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
-//         adjustScoresWithSD('down', targetPercentage);
-//     } else {
-//         // If already in range, make small random adjustments
-//         targetPercentage = TARGET_MIN + (Math.random() * (TARGET_MAX - TARGET_MIN));
-//         const direction = Math.random() < 0.5 ? 'up' : 'down';
-//         adjustScoresWithSD(direction, targetPercentage);
-//     }
-
-//     const finalPercentage = calculateTestSelectPercentage();
-//     console.log('Final percentage:', finalPercentage);
-
-//     downloadResultBtn.style.display = 'block';
-//     displayResults();
-// }
-
 function processData() {
     if (!originalJsonData) {
         alert('Please upload data first.');
@@ -232,87 +254,85 @@ function processData() {
 
 // Score Adjustment Function
 function adjustScoresWithSD(direction, targetPercentage) {
-    const scoreHeaders = excelHeaders.filter(header => header.match(/^S\d+Score$/));
-    
-    if (!scoreHeaders.includes('S3Score')) scoreHeaders.push('S3Score');
-    if (!scoreHeaders.includes('S4Score')) scoreHeaders.push('S4Score');
-    
-    const maxScoreHeaders = scoreHeaders.map(scoreHeader => 
-        scoreHeader.replace('Score', 'MaxScore')
-    );
-    
-    const standardDeviations = {};
-    
-    scoreHeaders.forEach(header => {
-        const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
-        standardDeviations[header] = calculateStandardDeviation(values);
-    });
-    
-    let currentPercentage = calculateTestSelectPercentage();
-    let iterationCount = 0;
-    const maxIterations = 1000; // Prevent infinite loops
-    
-    while (iterationCount < maxIterations) {
-        currentPercentage = calculateTestSelectPercentage();
-        console.log('Current percentage:', currentPercentage);
-        
-        // Break if we're close enough to target
-        if (Math.abs(currentPercentage - targetPercentage) < 0.5) {
-            break;
-        }
+  const scoreHeaders = excelHeaders.filter(header => header.match(/^S\d+Score$/));
+  
+  const maxScoreHeaders = scoreHeaders.map(scoreHeader => 
+      scoreHeader.replace('Score', 'MaxScore')
+  );
+  
+  const standardDeviations = {};
+  
+  scoreHeaders.forEach(header => {
+      const values = jsonData.map(row => parseFloat(row[header])).filter(val => !isNaN(val));
+      standardDeviations[header] = calculateStandardDeviation(values);
+  });
+  
+  let currentPercentage = calculateTestSelectPercentage();
+  let iterationCount = 0;
+  const maxIterations = 1000; // Prevent infinite loops
+  
+  while (iterationCount < maxIterations) {
+      currentPercentage = calculateTestSelectPercentage();
+      console.log('Current percentage:', currentPercentage);
+      
+      // Break if we're close enough to target
+      if (Math.abs(currentPercentage - targetPercentage) < 0.5) {
+          break;
+      }
 
-        // Determine if we need to go up or down based on current vs target
-        const effectiveDirection = currentPercentage < targetPercentage ? 'up' : 'down';
-        
-        const candidatesToModify = 
-            effectiveDirection === 'down' ? 
-                jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Select') :
-                jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Reject');
-        
-        if (candidatesToModify.length === 0) break;
-        
-        // Adjust the number of candidates to modify based on how far we are from target
-        const percentageDiff = Math.abs(currentPercentage - targetPercentage);
-        const numCandidatesToModify = Math.max(1, Math.min(
-            Math.ceil(candidatesToModify.length * (percentageDiff / 100)),
-            Math.ceil(candidatesToModify.length * 0.1) // Max 10% at once
-        ));
-        
-        for (let i = 0; i < numCandidatesToModify; i++) {
-            const randomCandidateIndex = Math.floor(Math.random() * candidatesToModify.length);
-            const randomCandidate = candidatesToModify[randomCandidateIndex];
-            
-            scoreHeaders.forEach((header, index) => {
-                const currentValue = parseFloat(randomCandidate[header]);
-                const maxScoreHeader = maxScoreHeaders[index];
-                const maxScoreValue = parseFloat(randomCandidate[maxScoreHeader]);
-                
-                if (!isNaN(currentValue) && !isNaN(maxScoreValue)) {
-                    // Adjust the random factor based on how far we are from target
-                    const randomFactor = 0.5 + (Math.random() * (percentageDiff / 50));
-                    const adjustmentValue = standardDeviations[header] * randomFactor;
-                    
-                    if (effectiveDirection === 'down') {
-                        randomCandidate[header] = Math.max(0, (currentValue - adjustmentValue)).toFixed(2);
-                    } else {
-                        randomCandidate[header] = Math.min(maxScoreValue, (currentValue + adjustmentValue)).toFixed(2);
-                    }
-                    
-                    randomCandidate[header.replace('Score', 'Percentage')] = 
-                        ((parseFloat(randomCandidate[header]) / maxScoreValue) * 100).toFixed(2);
-                    
-                    randomCandidate[header + '_changed'] = true;
-                }
-            });
-            
-            randomCandidate[ASSESSMENT_STATUS] = 
-                effectiveDirection === 'down' ? 'Test Reject' : 'Test Select';
-        }
-        
-        iterationCount++;
-    }
+      // Determine if we need to go up or down based on current vs target
+      const effectiveDirection = currentPercentage < targetPercentage ? 'up' : 'down';
+      
+      const candidatesToModify = 
+          effectiveDirection === 'down' ? 
+              jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Select') :
+              jsonData.filter(row => row[ASSESSMENT_STATUS] === 'Test Reject');
+      
+      if (candidatesToModify.length === 0) break;
+      
+      // Adjust the number of candidates to modify based on how far we are from target
+      const percentageDiff = Math.abs(currentPercentage - targetPercentage);
+      const numCandidatesToModify = Math.max(1, Math.min(
+          Math.ceil(candidatesToModify.length * (percentageDiff / 100)),
+          Math.ceil(candidatesToModify.length * 0.1) // Max 10% at once
+      ));
+      
+      for (let i = 0; i < numCandidatesToModify; i++) {
+          const randomCandidateIndex = Math.floor(Math.random() * candidatesToModify.length);
+          const randomCandidate = candidatesToModify[randomCandidateIndex];
+          
+          scoreHeaders.forEach((header, index) => {
+              const currentValue = parseFloat(randomCandidate[header]);
+              const maxScoreHeader = maxScoreHeaders[index];
+              const maxScoreValue = parseFloat(randomCandidate[maxScoreHeader]);
+              
+              if (!isNaN(currentValue) && !isNaN(maxScoreValue)) {
+                  const adjustmentValue = standardDeviations[header];
+
+                  let newValue;
+                  if (effectiveDirection === 'down') {
+                      newValue = Math.max(0, currentValue - adjustmentValue);
+                  } else {
+                      newValue = Math.min(maxScoreValue, currentValue + adjustmentValue);
+                  }
+                  
+                  // Use custom rounding function
+                  randomCandidate[header] = customRound(newValue);
+                  
+                  randomCandidate[header.replace('Score', 'Percentage')] = 
+                      customRound((parseFloat(randomCandidate[header]) / maxScoreValue) * 100);
+                  
+                  randomCandidate[header + '_changed'] = true;
+              }
+          });
+          
+          randomCandidate[ASSESSMENT_STATUS] = 
+              effectiveDirection === 'down' ? 'Test Reject' : 'Test Select';
+      }
+      
+      iterationCount++;
+  }
 }
-
 // Apply Cutoff Filters
 function applyCutoffFilters() {
     const filters = Array.from(document.querySelectorAll('.cutoff-filter')).map(filter => ({
@@ -361,84 +381,40 @@ function displayResults() {
 }
 
 // Download Results
-// function downloadResult() {
-//     try {
-//         const ws = XLSX.utils.json_to_sheet(jsonData);
-
-//         // Highlight changed cells
-//         jsonData.forEach((row, rowIndex) => {
-//             Object.keys(row).forEach(header => {
-//                 if (header.endsWith('_changed') && row[header]) {
-//                     const cellAddress = XLSX.utils.encode_cell({
-//                         r: rowIndex + 1,
-//                         c: excelHeaders.indexOf(header.replace('_changed', ''))
-//                     });
-//                     if (ws[cellAddress]) {
-//                         ws[cellAddress].s = { fill: { fgColor: { rgb: "FFFF00" } } };
-//                     }
-//                 }
-//             });
-//         });
-
-//         const wb = XLSX.utils.book_new();
-//         XLSX.utils.book_append_sheet(wb, ws, 'Results');
-//         XLSX.writeFile(wb, `normalized_results_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`);
-//     } catch (error) {
-//         console.error('Download error:', error);
-//         alert('Error downloading results. Please try again.');
-//     }
-// }
-
-// Download Results
 function downloadResult() {
     try {
-        // Create a deep copy of jsonData without the _changed flags
+        // Create enhanced data with change tracking columns
         const downloadData = jsonData.map(row => {
-            const cleanRow = {};
+            const enhancedRow = {};
+            
+            // First add all original columns
             Object.keys(row).forEach(key => {
-                // Skip the _changed marker properties
                 if (!key.endsWith('_changed')) {
-                    cleanRow[key] = row[key];
+                    enhancedRow[key] = row[key];
                 }
             });
-            return cleanRow;
+            
+            // Add change tracking columns for score and percentage fields
+            Object.keys(row).forEach(key => {
+                if (key.endsWith('_changed') && row[key] === true) {
+                    // Get the original column name without '_changed'
+                    const originalKey = key.replace('_changed', '');
+                    // Create a new column indicating the change
+                    enhancedRow[`${originalKey}_IsChanged`] = 'Yes';
+                }
+            });
+            
+            return enhancedRow;
         });
 
-        // Create worksheet from the normalized data
+        // Create worksheet
         const ws = XLSX.utils.json_to_sheet(downloadData);
 
-        // Add cell styling for changed values
-        downloadData.forEach((row, rowIndex) => {
-            Object.keys(row).forEach(key => {
-                // Check if this cell was changed (by looking at the _changed flag in original jsonData)
-                if (jsonData[rowIndex][key + '_changed']) {
-                    const cellAddress = XLSX.utils.encode_cell({
-                        r: rowIndex + 1, // Add 1 to account for header row
-                        c: Object.keys(downloadData[0]).indexOf(key)
-                    });
-                    
-                    if (!ws[cellAddress]) {
-                        ws[cellAddress] = { v: row[key] };
-                    }
-                    
-                    // Set yellow background for changed cells
-                    ws[cellAddress].s = {
-                        fill: {
-                            patternType: 'solid',
-                            fgColor: { rgb: "FFFF00" }
-                        }
-                    };
-                }
-            });
-        });
-
-        // Set column widths
+        // Set column widths for better readability
         const maxWidth = 15;
-        const colWidths = {};
-        Object.keys(downloadData[0]).forEach(key => {
-            colWidths[key] = Math.min(maxWidth, key.length + 2);
-        });
-        ws['!cols'] = Object.values(colWidths).map(width => ({ width }));
+        ws['!cols'] = Object.keys(downloadData[0]).map(key => ({
+            width: Math.min(maxWidth, key.length + 2)
+        }));
 
         // Create workbook and append worksheet
         const wb = XLSX.utils.book_new();
@@ -449,9 +425,14 @@ function downloadResult() {
         const filename = `normalized_results_${timestamp}.xlsx`;
 
         // Write file
-        XLSX.writeFile(wb, filename);
+        const wopts = {
+            bookSST: false,
+            bookType: 'xlsx',
+            compression: true
+        };
 
-        console.log('Download completed successfully');
+        XLSX.writeFile(wb, filename);
+        console.log('Download completed with change tracking columns');
     } catch (error) {
         console.error('Download error:', error);
         alert('Error downloading results. Please try again.');
