@@ -4,10 +4,11 @@ let originalJsonData = null;  // Store original data
 let excelHeaders = [];  // Store Excel headers
 
 // Constants for headers
-const FIXED_HEADERS = ['SN', 'Email ID', 'Full Name', 'Specialization'];
+const FIXED_HEADERS = ['SN', 'Email ID', 'Full Name', 'Specialization', 'Credibility Score'];
 const SECTION_HEADERS = ['MaxScore', 'Score', 'Percentage'];
 const SEPARATOR = 'Separator';
 const ASSESSMENT_STATUS = 'Assessment Status';
+const CREDIBILITY_SCORE = 'Credibility Score';
 
 // Constants for normalization
 const TARGET_MIN = 28; // Minimum target percentage
@@ -71,6 +72,7 @@ function downloadTemplate() {
             headers.push(...createSectionHeaders(i));
             headers.push(SEPARATOR);
         }
+        headers.push(CREDIBILITY_SCORE);
         headers.push(ASSESSMENT_STATUS);
 
         const ws = XLSX.utils.aoa_to_sheet([headers]);
